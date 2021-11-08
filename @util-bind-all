@@ -1,0 +1,88 @@
+#!/usr/bin/env zsh
+
+# Rebinds all key bindings so that they're executing some custom code. It's an
+# alternative to overloading of all Zle widgets.
+#
+# Arguments:
+#
+# 1. The custom snippet of code to run before executing the original widget.
+# 2. A bool (`1`,`yes`,`true`,`on` for truth or other value for false) indicating
+#    whether the widget calls should be automatically forwarded to their original
+#    (before-binding) versions.
+# 3. (Optional) Custom snippet of code to be executed **after** executing the
+#    original widget.
+# 4. (Optional) A method of the binding – either `bindkey' (the default) or
+#    `zle-N'. The first one is fully bindkey based, i.e.: e.g.: it doesn't
+#    create the backup widgets that are typically prefixed with "orig–". The
+#    second is half-bindkey / half-zle -N based - it does create the backup
+#    widgets, however the widgets are obtained using `bindkey' listing
+#    invocation, which means that typically only a half of all widgets are
+#    bound.
+
+# Example:
+#
+# @util-bind-all 'print hello!' yes 'print hello after!' bindkey
+
+emulate -LR zsh
+setopt extended_glob warn_create_global typeset_silent no_short_loops rc_quotes
+
+local ADDED_BLOCK=$1 DO_FORWARD=$2 ADDED_BLOCK_AFTER=$3 \
+    METHOD=${4:-bindkey} # either: bindkey, zle-N
+
+local -a maps linked_main_maps
+maps=( "${(@f)$( bindkey -l )}" )
+maps=( "${maps[@]:#(.safe|menuselect)}" )
+linked_main_maps=( "${(@)${(@f)$( bindkey -lL main )}/(#m)*/${${(@z)MATCH}[3]}}" )
+maps=( ${maps:|linked_main_maps} )
+
+local map
+for map ( $maps ) {
+    local -a binds
+    binds=( "${(@f)$( bindkey -M $map -L )//-M [^[:blank:]]##/}" )
+    # Normalize the options and remove -a
+    binds=( "${binds[@]/bindkey[[:blank:]]##-a[[:blank:]]##/bindkey }" )
+    binds=( "${binds[@]/bindkey[[:blank:]]##-s[[:blank:]]##-a[[:blank:]]##/bindkey -s }" )
+    binds=( "${binds[@]/bindkey[[:blank:]]##-R[[:blank:]]##-a[[:blank:]]##/bindkey -R }" )
+    binds=( "${binds[@]/bindkey[[:blank:]]##-R[[:blank:]]##-s[[:blank:]]##(-a[[:blank:]]##|)/bindkey -Rs }" )
+
+    local bind
+    local -A Bound
+    for bind ( $binds ) {
+        local -a option_key_widget
+        option_key_widget=( "${(@z)bind}" )
+        option_key_widget[1]=()
+
+        [[ $option_key_widget[1] != -* ]] && option_key_widget[1,0]=( "" )
+        [[ $option_key_widget[1] == -- ]] && option_key_widget[1]=""
+
+        [[ ${option_key_widget[3]} != (orig-|)util-lib-* ]] && \
+            (( !Bound[${option_key_widget[3]}] )) && \
+        {
+            Bound[${option_key_widget[3]}]=1
+            local funstr="function :util-lib-${option_key_widget[3]}-func {
+                    $ADDED_BLOCK";
+            if [[ -n ${${(M)DO_FORWARD:#(1|yes|on|true)}:+1} ]]; then
+                funstr+="
+                    if (( \${+widgets[${${(M)METHOD:#zle-N}:+orig-util-lib-}${option_key_widget[3]}]} )); then
+                        zle ${${(M)METHOD:#zle-N}:+orig-util-lib-}${option_key_widget[3]} \"\$@\"
+                    else
+                        zle .${option_key_widget[3]} \"\$@\"
+                    fi"
+                funstr+="
+                    $ADDED_BLOCK_AFTER
+                }";
+                eval $funstr;
+            fi
+            if [[ $METHOD = zle-N && ${widgets[${option_key_widget[3]}]} != builtin ]]; then
+                zle -N -- orig-util-lib-${option_key_widget[3]} ${widgets[${option_key_widget[3]}]#*:}
+            fi
+        }
+        (( !Bound[${option_key_widget[3]}-2] )) && {
+            Bound[${option_key_widget[3]}-2]=1
+            zle -N -- ${${(M)METHOD:#bindkey}:+util-lib-}${option_key_widget[3]} :util-lib-${option_key_widget[3]}-func
+        }
+
+        [[ $METHOD = bindkey ]] && \
+            eval "bindkey ${option_key_widget[1]} -M $map -- ${option_key_widget[2]} util-lib-${option_key_widget[3]#util-lib-}"
+    }
+}
