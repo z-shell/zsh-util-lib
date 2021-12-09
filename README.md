@@ -1,15 +1,11 @@
-# `ZSH-UTIL-LIB`
+# Zsh Util lib
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Introduction](#introduction)
   - [List Of The Functions](#list-of-the-functions)
     - [@util-bind-all](#util-bind-all)
 
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-# Introduction
+## Introduction
 
 An utility-library for Zshell that provides a few general-purpose functions.
 It's a counterpart to the
