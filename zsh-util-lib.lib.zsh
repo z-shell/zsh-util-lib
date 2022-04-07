@@ -1,14 +1,12 @@
-# -*- mode: sh; sh-indentation: 4; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
-
+# -*- mode: zsh; sh-indentation: 2; indent-tabs-mode: nil; sh-basic-offset: 2; -*-
+#
 # Copyright (c) 2019 Sebastian Gniazdowski
+#
+# Standardized $0 Handling
+# https://z.digitalclouds.dev/community/zsh_plugin_standard#zero-handling
 
-# According to the Zsh Plugin Standard:
-# http://z-shell.github.io/Zsh-100-Commits-Club/Zsh-Plugin-Standard.html
-
-0=${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}
-0=${${(M)0:#/*}:-$PWD/$0}
-
-# Then ${0:h} to get plugin's directory
+0="${ZERO:-${${0:#$ZSH_ARGZERO}:-${(%):-%N}}}"
+0="${${(M)0:#/*}:-$PWD/$0}"
 
 if [[ ${zsh_loaded_plugins[-1]} != */zsh-util-lib && -z ${fpath[(r)${0:h}]} ]]
 then
@@ -16,7 +14,6 @@ then
 fi
 
 typeset -g ZSH_UTIL_LIB_DIR=${0:h}
-
 autoload @util-bind-all
 
-# vim:ft=zsh:sw=4:sts=4:et
+# vim: ft=zsh sw=2 ts=2 et
