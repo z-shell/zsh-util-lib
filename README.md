@@ -1,5 +1,16 @@
 # Zsh Util lib
 
+**This repository is archived and unmaintained.** Its last functional change was
+in January 2023 and no consumer of it is known. The code still works and stays
+readable here; copy `@util-bind-all` into your own configuration if you want it.
+
+`@util-bind-all` rebinds every key binding so each one runs an extra snippet of
+code, as an alternative to overloading every Zle widget. The closest maintained
+feature in the ecosystem is [Zi](https://github.com/z-shell/zi)'s `bindmap` ice,
+but the two are not equivalent: `bindmap` remaps specific keys for a single
+plugin, while `@util-bind-all` wraps all bindings globally. Neither replaces the
+other.
+
 
 - [Introduction](#introduction)
   - [List Of The Functions](#list-of-the-functions)
